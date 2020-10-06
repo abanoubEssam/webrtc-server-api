@@ -32,15 +32,28 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     );
     if (!existingSocket) {
       this.activeSockets.push(socket.id);
-      socket.emit("update-user-list", {
+      socket.emit("users-list", {
         users: this.activeSockets.filter(
           existingSocket => existingSocket !== socket.id
         )
       });
-      socket.broadcast.emit("update-user-list", {
+      socket.broadcast.emit("users-list", {
         users: [socket.id]
       });
     }
+
+    // when offer gets fired
+    socket.on('offer', payload => {
+      socket.to(payload.target).emit('offer', payload);
+    });
+
+    socket.on('answer', payload => {
+      socket.to(payload.target).emit('answer', payload);
+    });
+
+    socket.on('ice-candidate', incoming => {
+      socket.to(incoming.target).emit('ice-candidate', incoming.candidate);
+    });
 
     socket.on('join-room', (roomId, userId) => {
       console.log("AppGateway -> handleConnection -> roomId", roomId)
