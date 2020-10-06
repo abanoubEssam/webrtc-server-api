@@ -73,8 +73,9 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     this.activeSockets = this.activeSockets.filter(
       existingSocket => existingSocket !== socket.id
     );
+   
     socket.broadcast.emit("remove-user", {
-      clientId: socket.id
+      socketId: socket.id
     });
     this.logger.log(`Client disconnected: ${socket.id}`);
     console.log("AppGateway -> handleDisconnect -> this.activeSockets", this.activeSockets)
