@@ -8,9 +8,14 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000
   const app = await NestFactory.create(AppModule);
-  AwakeHeroku.add({
-    url: "https://webrtc-server-api.herokuapp.com/"
-  })
+  
+
+  if (process.env.NODE_ENV !== "development") {
+    AwakeHeroku.add({
+      url: "https://webrtc-server-api.herokuapp.com/"
+    })
+    
+  }
   await app.listen(port);
   logger.log(`App Starts with Port ${port}`)
 }

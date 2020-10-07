@@ -31,7 +31,8 @@
     "awake-heroku": "^1.0.17",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
-    "rxjs": "^6.5.4"
+    "rxjs": "^6.5.4",
+    "username-generator": "^1.1.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^7.0.0",
