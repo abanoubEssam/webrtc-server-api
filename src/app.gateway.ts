@@ -30,7 +30,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
 
   handleDisconnect(socket: Socket) {
     this.logger.log(`Client disconnected: ${socket.id}`);
-    this.activeSockets = this.activeSockets.filter(existingSocket=> {
+    this.activeSockets = this.activeSockets.filter(existingSocket => {
       return existingSocket.socketId !== socket.id
     });
     console.log("AppGateway -> handleDisconnect -> existingSockets", this.activeSockets)
@@ -52,7 +52,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     );
 
     if (!existingSocket) {
-      
+
       this.activeSockets.push(userPayload);
 
       console.log("AppGateway -> handleConnection -> this.activeSockets", this.activeSockets)
@@ -61,24 +61,33 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
           existingSocket => existingSocket.socketId !== socket.id
         )
       });
-      socket.broadcast.emit("users-list", 
-         [userPayload]
+      socket.broadcast.emit("users-list",
+        [userPayload]
       );
     }
 
-    socket.emit("conn-success", { socketId: socket.id, name: currentUserName})
+    socket.emit("conn-success", { socketId: socket.id, name: currentUserName })
     // when offer gets fired
-    
+
     socket.on('offer', payload => {
-      socket.to(payload.target).emit('offer', payload);
+      const userConnection = this.activeSockets.filter(reseiver => {
+        return reseiver.name == payload.name
+      })
+      socket.to(userConnection[0].socketId).emit('offer', payload);
     });
 
     socket.on('answer', payload => {
-      socket.to(payload.target).emit('answer', payload);
+      const userConnection = this.activeSockets.filter(reseiver => {
+        return reseiver.name == payload.name
+      })
+      socket.to(userConnection[0].socketId).emit('answer', payload);
     });
 
     socket.on('ice-candidate', incoming => {
-      socket.to(incoming.target).emit('ice-candidate', incoming.candidate);
+      const userConnection = this.activeSockets.filter(reseiver => {
+        return reseiver.name == incoming.name
+      })
+      socket.to(userConnection[0].socketId).emit('ice-candidate', incoming.candidate);
     });
 
     // socket.on('join-room', (roomId, userId) => {
