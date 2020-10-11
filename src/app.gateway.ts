@@ -55,12 +55,11 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
 
       this.activeSockets.push(userPayload);
 
-      console.log("AppGateway -> handleConnection -> this.activeSockets", this.activeSockets)
-      socket.emit("users-list", {
-        users: this.activeSockets.filter(
-          existingSocket => existingSocket.socketId !== socket.id
-        )
-      });
+      const usersList = this.activeSockets.filter(
+        existingSocket => existingSocket.socketId !== socket.id
+      )
+   
+      socket.emit("users-list", usersList);
       socket.broadcast.emit("users-list",
         [userPayload]
       );
@@ -70,22 +69,22 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     // when offer gets fired
 
     socket.on('offer', payload => {
-      const userConnection = this.activeSockets.filter(reseiver => {
-        return reseiver.name == payload.name
+      const userConnection = this.activeSockets.filter(receiver => {
+        return receiver.name == payload.name
       })
       socket.to(userConnection[0].socketId).emit('offer', payload);
     });
 
     socket.on('answer', payload => {
-      const userConnection = this.activeSockets.filter(reseiver => {
-        return reseiver.name == payload.name
+      const userConnection = this.activeSockets.filter(receiver => {
+        return receiver.name == payload.name
       })
       socket.to(userConnection[0].socketId).emit('answer', payload);
     });
 
     socket.on('ice-candidate', incoming => {
-      const userConnection = this.activeSockets.filter(reseiver => {
-        return reseiver.name == incoming.name
+      const userConnection = this.activeSockets.filter(receiver => {
+        return receiver.name == incoming.name
       })
       socket.to(userConnection[0].socketId).emit('ice-candidate', incoming.candidate);
     });
