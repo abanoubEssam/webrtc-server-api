@@ -1,3 +1,5 @@
+import { IceCandidatePayload } from './ice-candidate.interface';
+import { OfferAnswerPayload } from './offer-answer.payload.interface';
 import {
   SubscribeMessage,
   WebSocketGateway,
@@ -10,12 +12,16 @@ import {
 import { Logger } from '@nestjs/common';
 import { Socket, Server, } from 'socket.io';
 import * as UsernameGenerator from 'username-generator'
+
+
 @WebSocketGateway({ namespace: '/' })
 export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
 
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('AppGateway');
   private activeSockets = []
+  private users = new Map()
+  private otherUsers = new Map()
 
 
   @SubscribeMessage('msgToServer')
@@ -33,6 +39,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     this.activeSockets = this.activeSockets.filter(existingSocket => {
       return existingSocket.socketId !== socket.id
     });
+    this.users.delete(socket['currentUserName']);
     console.log("AppGateway -> handleDisconnect -> existingSockets", this.activeSockets)
   }
 
@@ -42,64 +49,66 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
       socketId: socket.id,
       name: currentUserName
     }
-    console.log("AppGateway -> handleConnection -> userPayload", userPayload)
 
+
+    socket['currentUserName'] = currentUserName;
 
     console.log("ME NOW: ", socket.id)
 
-    const existingSocket = this.activeSockets.find(
-      existingSocket => existingSocket.socketId === socket.id
-    );
+    const existingUser = this.users.get(socket['currentUserName'])
+    if (!existingUser) {
+      this.otherUsers = this.users
 
-    if (!existingSocket) {
+      this.users.set(currentUserName, socket);
 
-      this.activeSockets.push(userPayload);
+      socket.emit("users-list", Array.from(this.otherUsers.keys()));
 
-      const usersList = this.activeSockets.filter(
-        existingSocket => existingSocket.socketId !== socket.id
-      )
-   
-      socket.emit("users-list", usersList);
       socket.broadcast.emit("users-list",
-        [userPayload]
+        Array.from(this.users.keys())
       );
     }
+
 
     socket.emit("conn-success", { socketId: socket.id, name: currentUserName })
     // when offer gets fired
 
-    socket.on('offer', payload => {
-      const userConnection = this.activeSockets.filter(receiver => {
-        return receiver.name == payload.name
-      })
-      socket.to(userConnection[0].socketId).emit('offer', payload);
+
+    socket.on('offer', (payload: OfferAnswerPayload) => {
+      console.log("OFFER -> payload", payload)
+      const otherUser = this.users.get(payload.name)
+      // console.log("AppGateway -> handleConnection -> otherUser", otherUser)
+      if (otherUser) {
+        otherUser.emit('offer', payload);
+      } else {
+        socket.emit("User offline")
+      }
+
+
     });
 
-    socket.on('answer', payload => {
-      const userConnection = this.activeSockets.filter(receiver => {
-        return receiver.name == payload.name
-      })
-      socket.to(userConnection[0].socketId).emit('answer', payload);
+    socket.on('answer', (payload: OfferAnswerPayload) => {
+      console.log("OFFER -> payload", payload)
+      const otherUser = this.users.get(payload.name)
+      if (otherUser) {
+        otherUser.emit('answer', payload);
+      } else {
+        socket.emit("User offline")
+      }
+
     });
 
-    socket.on('ice-candidate', incoming => {
-      const userConnection = this.activeSockets.filter(receiver => {
-        return receiver.name == incoming.name
-      })
-      socket.to(userConnection[0].socketId).emit('ice-candidate', incoming.candidate);
+
+    socket.on('ice-candidat', (payload: IceCandidatePayload) => {
+      const otherUser = this.users.get(payload.name)
+      if (otherUser) {
+        otherUser.emit('ice-candidate', payload);
+      } else {
+        socket.emit("User offline")
+      }
+
     });
 
-    // socket.on('join-room', (roomId, userId) => {
-    //   console.log("AppGateway -> handleConnection -> roomId", roomId)
-    //   socket.join(roomId)
-    //   socket.to(roomId).broadcast.emit('user-connected', userId)
 
-    //   socket.on('disconnect', () => {
-    //     socket.to(roomId).broadcast.emit('user-disconnected', userId)
-    //   })
-    // })
-
-    // this.logger.log(`Clients connected: ${this.activeSockets}`);
   }
 
 
