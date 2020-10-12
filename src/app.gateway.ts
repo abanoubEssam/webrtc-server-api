@@ -98,7 +98,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     });
 
 
-    socket.on('ice-candidat', (payload: IceCandidatePayload) => {
+    socket.on('ice-candidate', (payload: IceCandidatePayload) => {
       const otherUser = this.users.get(payload.name)
       if (otherUser) {
         otherUser.emit('ice-candidate', payload);
