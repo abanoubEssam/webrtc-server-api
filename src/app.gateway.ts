@@ -97,6 +97,27 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
 
     });
 
+    socket.on('reject', (payload: { from: string, name: string, reject: boolean }) => {
+      console.log("reject -> payload", payload)
+      const otherUser = this.users.get(payload.name)
+      if (otherUser) {
+        otherUser.emit('reject', payload);
+      } else {
+        socket.emit('user-status',"User offline")
+      }
+    });
+
+    socket.on('cancel', (payload: { from: string, name: string, cancel: boolean }) => {
+      console.log("cancel -> payload", payload)
+      const otherUser = this.users.get(payload.name)
+      if (otherUser) {
+        otherUser.emit('cancel', payload);
+      } else {
+        socket.emit('user-status',"User offline")
+      }
+
+    });
+
 
     socket.on('ice-candidate', (payload: IceCandidatePayload) => {
       const otherUser = this.users.get(payload.name)
