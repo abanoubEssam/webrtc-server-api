@@ -72,6 +72,16 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     socket.emit("conn-success", { socketId: socket.id, name: currentUserName })
     // when offer gets fired
 
+    socket.on('chat-message', (payload: { from: string, name: string, message: boolean }) => {
+      console.log("message -> payload", payload)
+      const otherUser = this.users.get(payload.name)
+      if (otherUser) {
+        otherUser.emit('chat-message', payload);
+      } else {
+        socket.emit('user-status',"User offline")
+      }
+    });
+
 
     socket.on('offer', (payload: OfferAnswerPayload) => {
       console.log("OFFER -> payload", payload)
